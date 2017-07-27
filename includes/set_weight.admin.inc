@@ -2,7 +2,7 @@
 function set_weight_admin_setting_form($form, &$form_state) {
 	$weight = 0;
 	$wrappername = 'sw_field_wrapper';
-  
+
   if (isset($form_state['values'])) {
 		$valid = TRUE;
 		$values = $form_state['values'];
@@ -23,26 +23,7 @@ function set_weight_admin_setting_form($form, &$form_state) {
 		}
 		if ($valid) {
 			$insert = dbinsert('set_weight_setting',$fields);
-			// if ($insert) {
-			//   $messages = '<div class="messages status">Information is saved</div>';
-			//   $commands = array();
-			//   $loaddata = dbselect('set_weight_setting');
-
-			//   if (!empty($loaddata)) {
-			// 	  $table = sw_table($loaddata);
-			//   }
-
-			// 	$commands[] = ajax_command_replace('#set-weight-record .wrapper', '<div class="wrapper">' . $messages . $table . '</div>');
-			//   $commands[] = ajax_command_replace('#sw_field_wrapper', drupal_render($form[$wrappername]));
-			//   $ajax = array(
-			//     '#type' => 'ajax',
-			//     '#commands' => $commands
-			//   );
-			  
-			//   return $ajax;
-			// }
 			drupal_set_message(t('Information is saved'), 'status');
-			return $form[$wrappername];
 		}
 	}
 
@@ -54,7 +35,6 @@ function set_weight_admin_setting_form($form, &$form_state) {
 			}
 		$html .= '</div>';
 	$html .= '</div>';
-
 
 	$form[$wrappername] = array(
 		'#type' => 'markup',
@@ -87,11 +67,11 @@ function set_weight_admin_setting_form($form, &$form_state) {
 
 	$weight++;
 	$form['sw-submit'] = array(
-		'#type' => 'submit',
+		'#type' => 'button',
 		'#value' => t('Add'),
 		'#weight' => $weight,
 		'#ajax' => array(
-      'callback' => 'set_weight_admin_submit',
+      'callback' => 'set_weight_admin_ajax_callback',
       'wrapper' => $wrappername,
       'method' => 'replace',
       'effect' => 'fade',
@@ -131,34 +111,47 @@ function set_weight_admin_validate($form, &$form_state) {
 }
 
 
-function set_weight_admin_submit($form, &$form_state) {
+/*
+	* Ajax submit callback from "set_weight_admin_setting_form"
+*/
+function set_weight_admin_ajax_callback($form, &$form_state) {
 	$wrappername = 'sw_field_wrapper';
 	return $form[$wrappername];
 }
 
 
-function set_weight_admin_settings_delete($form, $form_state, $id) {
+/*
+	* Comfirm form for deleting set weight setting data
+*/
+function set_weight_admin_settings_delete_form($form, $form_state, $id) {
 	$db = dbselectWhere('set_weight_setting',array(),'id',$id);
+	if (!empty($db)) {
+		$form['the_id'] = array(
+			'#type' => 'value',
+			'#value' => $id,
+		);
+		$confirm = confirm_form(
+			$form,
+			t('Are you sure you want to Delete "' . $db[0]['field_name'] . '" from "' . $db[0]['type'] . '"'),
+			'admin/config/system/sw-config',
+			t('This action cannot be undone.'),
+			t('Delete'),
+			t('Cancel')
+		);
 
-	$form['the_id'] = array(
-		'#type' => 'value',
-		'#value' => $id,
-	);
-
-	$confirm = confirm_form(
-		$form,
-		t('Are you sure you want to Delete "' . $db[0]['field_name'] . '" from "' . $db[0]['type'] . '"'),
-		'admin/config/system/sw-config',
-		t('This action cannot be undone.'),
-		t('Delete'),
-		t('Cancel')
-	);
-
-	return $confirm;
+		return $confirm;
+	}
+	else {
+		drupal_not_found();
+		drupal_exit();
+	}
 }
 
 
-function set_weight_admin_settings_delete_submit($form, &$form_state) {
+/*
+	* Comfirm Event for deleting set weight setting data
+*/
+function set_weight_admin_settings_delete_form_submit($form, &$form_state) {
 	if (isset($form_state['values']) && isset($form_state['values']['the_id'])) {
 		$db = dbselectWhere('set_weight_setting',array('field_name'),'id',$form_state['values']['the_id']);
 		if (!empty($db)) {
@@ -169,21 +162,32 @@ function set_weight_admin_settings_delete_submit($form, &$form_state) {
 		dbdelete('set_weight_setting', 'id',$form_state['values']['the_id']);
 
 		drupal_set_message('The information is Deleted','status');
-		$form_state['redirect'] = 'admin/config/system/sw-config/';
+		$form_state['redirect'] = 'admin/config/system/sw-config';
 	}
 }
 
 
+/*
+	* Table Template for set weight setting data
+*/
 function sw_table($data) {
+  $attr = array(
+    'attributes' => array(
+      'target'=>'_blank',
+    ),
+  );
+  
   $rows = array();
+
   foreach ($data as $value) {
+  	$fieldname = $value['field_name'];
     $rows[] = array(
       array(
         'data' => $value['type'],
         'class' => 'td-type'
       ),
       array(
-        'data' => $value['field_name'],
+        'data' => l($fieldname, "admin/sw-config/$fieldname/view" ,$attr),
         'class' => 'td-field-name'
       ),
       array(

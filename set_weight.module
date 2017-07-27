@@ -7,26 +7,24 @@ function set_weight_form_alter(&$form, &$form_state, $form_id) {
     $valid = FALSE;
     $select = dbselect('set_weight_setting');
     foreach ($select as $value) {
-      if ((isset($form['type']['#value'])) && ($form['type']['#value'] == $value['type'])) {
-        $valid = TRUE;
-        $field_name = $value['field_name'];
-        $attr = array(
-          'attributes' => array(
-            'target'=>'_blank',
-            'class'=>'colorbox-load',
-          ),
-          'query'=> array(
-            'width'=>'80%',
-            'height'=>'80%',
-            'iframe'=>'true',
-            'field_name'=>$value['field_name'],
-          ),
-        );
-        $form[$field_name]['und'][0]['value']['#description'] = l('View ' . $form[$field_name]['und']['#title'] . ' values', 'admin/config/system/sw-config/view' ,$attr);;
+      $field_name = $value['field_name'];
+      if (isset($form['type']['#value']) && $form['type']['#value'] == $value['type']) {
+        if (isset($form[$field_name]['und'][0]['value']['#type']) && $form[$field_name]['und'][0]['value']['#type'] == 'textfield') {
+          $valid = TRUE;
+          $valueFname = $value['field_name'];
+          $attr = array(
+            'attributes' => array(
+              'target'=>'_blank',
+            ),
+          );
+          $original = $form[$field_name]['und'][0]['value']['#description'];
+          $form[$field_name]['und'][0]['value']['#required'] = TRUE;
+          $form[$field_name]['und'][0]['value']['#description'] = $original . ' ' . l('View ' . $form[$field_name]['und']['#title'] . ' values', "admin/sw-config/$valueFname/view" ,$attr);
+        }
       }
     }
     if ($valid == TRUE) {
-      $form['#validate'][] = 'validate_set_weight_values';
+      $form['#validate'][] = 'validate_node_set_weight_values';
     }
 	}
 }
@@ -39,25 +37,29 @@ function set_weight_menu() {
   // A menu callback is required when using ajax outside of the Form API.
   $items['admin/config/system/sw-config'] = array(
   	'title' => 'Configure Set Weight',
-    'access arguments' => array('administer site configuration'),
+  	'access arguments' => array('administer site configuration'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('set_weight_admin_setting_form'),
     'file' => 'includes/set_weight.admin.inc',
   );
+  
+  $items['admin/sw-config/%/view'] = array(
+    'title' => 'View Values',
+    'weight' => 1,
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('set_weight_view_form'),
+    'access callback' => '_node_add_access',
+    'file' => 'includes/set-weight-view.inc',
+  );
+  
   $items['admin/%/delete'] = array(
     'title' => 'Delete',
     'access arguments' => array('administer site configuration'),
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('set_weight_admin_settings_delete',1),
+    'page arguments' => array('set_weight_admin_settings_delete_form',1),
     'file' => 'includes/set_weight.admin.inc',
   );
-  $items['admin/config/system/sw-config/view'] = array(
-    'title' => 'View Values',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('set_weight_form'),
-    'access callback' => '_node_add_access',
-    'file' => 'includes/set-weight-view.inc',
-  );
+
   return $items;
 }
 
@@ -83,6 +85,23 @@ function set_weight_node_insert($node) {
  */
 function set_weight_node_delete($node) {
   delete_set_weight_values($node);
+}
+
+
+/**
+ * Implements hook_field_delete_field().
+ */
+function set_weight_field_delete_field($field) {
+  if (isset($field['field_name'])) {
+    $fieldname = $field['field_name'];
+    $db = dbselectWhere('set_weight_setting',array('field_name'),'field_name',$fieldname);
+    if (!empty($db)) {
+      foreach ($db as $room) {
+        dbdelete('set_weight_values', 'field_name',$room['field_name']);
+        dbdelete('set_weight_setting', 'field_name',$fieldname);
+      }
+    }
+  }
 }
 
 
