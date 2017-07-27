@@ -1,0 +1,90 @@
+<?php
+/**
+ * Implements hook_form_alter().
+ */
+function set_weight_form_alter(&$form, &$form_state, $form_id) {
+  if (isset($form['type'])) {
+    $valid = FALSE;
+    $select = dbselect('set_weight_setting');
+    foreach ($select as $value) {
+      if ((isset($form['type']['#value'])) && ($form['type']['#value'] == $value['type'])) {
+        $valid = TRUE;
+        $field_name = $value['field_name'];
+        $attr = array(
+          'attributes' => array(
+            'target'=>'_blank',
+            'class'=>'colorbox-load',
+          ),
+          'query'=> array(
+            'width'=>'80%',
+            'height'=>'80%',
+            'iframe'=>'true',
+            'field_name'=>$value['field_name'],
+          ),
+        );
+        $form[$field_name]['und'][0]['value']['#description'] = l('View ' . $form[$field_name]['und']['#title'] . ' values', 'admin/config/system/sw-config/view' ,$attr);;
+      }
+    }
+    if ($valid == TRUE) {
+      $form['#validate'][] = 'validate_set_weight_values';
+    }
+	}
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function set_weight_menu() {
+  // A menu callback is required when using ajax outside of the Form API.
+  $items['admin/config/system/sw-config'] = array(
+  	'title' => 'Configure Set Weight',
+    'access arguments' => array('administer site configuration'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('set_weight_admin_setting_form'),
+    'file' => 'includes/set_weight.admin.inc',
+  );
+  $items['admin/%/delete'] = array(
+    'title' => 'Delete',
+    'access arguments' => array('administer site configuration'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('set_weight_admin_settings_delete',1),
+    'file' => 'includes/set_weight.admin.inc',
+  );
+  $items['admin/config/system/sw-config/view'] = array(
+    'title' => 'View Values',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('set_weight_form'),
+    'access callback' => '_node_add_access',
+    'file' => 'includes/set-weight-view.inc',
+  );
+  return $items;
+}
+
+
+/**
+ * Implements hook_node_insert().
+ */
+function set_weight_node_update($node) {
+  update_set_weight_values($node);
+}
+
+
+/**
+ * Implements hook_node_insert().
+ */
+function set_weight_node_insert($node) {
+  insert_set_weight_values($node);
+}
+
+
+/**
+ * Implements hook_node_delete().
+ */
+function set_weight_node_delete($node) {
+  delete_set_weight_values($node);
+}
+
+
+module_load_include('inc', 'set_weight', 'includes/helper');
+module_load_include('inc', 'set_weight', 'includes/set_weight_form');

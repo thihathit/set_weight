@@ -1,0 +1,8 @@
+name = Set Weight
+description = Manage Weight Values. Note: you can use colorbox node along with this module but don't forget to configure this setting "Show Colorbox on specific pages".
+
+package = Zino Module Development
+core = 7.x
+
+files[] = set_weight.module
+files[] = set_weight.install

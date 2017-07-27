@@ -1,0 +1,70 @@
+<?php
+
+/**
+ * Implements hook_schema().
+ */
+function set_weight_schema() {
+  $schema['set_weight_setting'] = array(
+    'description' => '',
+    'fields' => array(
+			'id' => array(
+				'description' => 'primary key',
+				'type' => 'serial',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+			'type' => array(
+				'description' => 'content type',
+				'type' => 'varchar',
+				'length' => 250,
+				'not null' => TRUE,
+			),
+			'field_name' => array(
+				'description' => 'field name',
+				'type' => 'varchar',
+				'length' => 250,
+				'not null' => TRUE,
+			),
+		),
+    'primary key' => array('id'),
+  );
+
+  $schema['set_weight_values'] = array(
+    'description' => '',
+    'fields' => array(
+			'id' => array(
+				'description' => 'primary key',
+				'type' => 'serial',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+			'field_name' => array(
+				'description' => 'field name',
+				'type' => 'varchar',
+				'length' => 250,
+				'not null' => TRUE,
+			),
+			'nid' => array(
+				'description' => 'node id',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+			'title' => array(
+				'description' => 'node id',
+				'type' => 'varchar',
+				'length' => 250,
+				'not null' => TRUE,
+			),
+			'weight' => array(
+				'description' => 'set weight value',
+				'type' => 'int',
+				'unsigned' => TRUE,
+				'not null' => TRUE,
+			),
+		),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}
